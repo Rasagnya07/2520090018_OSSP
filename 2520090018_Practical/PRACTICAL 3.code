@@ -1,33 +1,47 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-
 int main()
 {
     pid_t pid;
 
-    pid = fork();
+pid = fork();
 
-    if(pid == 0)
-    {
-        printf("\nChild Process\n");
-        printf("PID  = %d\n", getpid());
-        printf("PPID = %d\n", getppid());
+if (pid < 0)
+{
+    printf("Fork failed!\n");
+    return 1;
+}
 
-        printf("Child is Running...\n");
-        sleep(10);      // Child waits for 10 seconds
+else if (pid == 0)
+{
+    // Child Process
+    printf("\n----- CHILD PROCESS -----\n");
+    printf("Child PID  : %d\n", getpid());
+    printf("Parent PID : %d\n", getppid());
 
-        printf("Child Terminated\n");
-    }
-    else
-    {
-        printf("\nParent Process\n");
-        printf("PID = %d\n", getpid());
+    printf("Child is Running...\n");
+    sleep(5);   // Child sleeps for 5 seconds
 
-        wait(NULL);
+    printf("Child is Terminating...\n");
+    exit(0);
+}
 
-        printf("Parent Finished\n");
-    }
+else
+{
+    // Parent Process
+    printf("\n----- PARENT PROCESS -----\n");
+    printf("Parent PID : %d\n", getpid());
+    printf("Child PID  : %d\n", pid);
 
-    return 0;
+    printf("Parent is Waiting for Child...\n");
+    wait(NULL);
+
+    printf("Child Completed.\n");
+    printf("Parent Process Terminating...\n");
+}
+
+return 0;
 }
