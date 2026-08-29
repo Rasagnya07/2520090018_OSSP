@@ -1,0 +1,308 @@
+3A)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <termios.h>
+
+#define MAX_HISTORY 100
+#define MAX_COMMAND 1024
+
+char history[MAX_HISTORY][MAX_COMMAND];
+int history_count = 0;
+int history_index = 0;
+
+/* Store a command in history */
+void store_history(const char *command)
+{
+    if (strlen(command) == 0)
+        return;
+
+    /* Avoid storing duplicate consecutive commands */
+    if (history_count > 0 &&
+        strcmp(history[history_count - 1], command) == 0)
+        return;
+
+    if (history_count < MAX_HISTORY)
+    {
+        strcpy(history[history_count], command);
+        history_count++;
+    }
+    else
+    {
+        /* Shift old commands when history is full */
+        for (int i = 1; i < MAX_HISTORY; i++)
+        {
+            strcpy(history[i - 1], history[i]);
+        }
+
+        strcpy(history[MAX_HISTORY - 1], command);
+    }
+
+    history_index = history_count;
+}
+
+/* Clear the current terminal line */
+void clear_line(int length)
+{
+    printf("\r");
+
+    for (int i = 0; i < length; i++)
+        printf(" ");
+
+    printf("\r");
+    fflush(stdout);
+}
+
+/* Read command with arrow-key history navigation */
+void read_command(char *buffer)
+{
+    struct termios old_terminal, new_terminal;
+
+    tcgetattr(STDIN_FILENO, &old_terminal);
+
+    new_terminal = old_terminal;
+
+    /* Disable canonical mode and echo */
+    new_terminal.c_lflag &= ~(ICANON | ECHO);
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_terminal);
+
+    int position = 0;
+    int old_length = 0;
+
+    while (1)
+    {
+        char c;
+
+        read(STDIN_FILENO, &c, 1);
+
+        /* ENTER */
+        if (c == '\n' || c == '\r')
+        {
+            buffer[position] = '\0';
+            printf("\n");
+            break;
+        }
+
+        /* BACKSPACE */
+        else if (c == 127 || c == 8)
+        {
+            if (position > 0)
+            {
+                position--;
+
+                printf("\b \b");
+                fflush(stdout);
+            }
+        }
+
+        /* ESCAPE SEQUENCE */
+        else if (c == 27)
+        {
+            char seq[2];
+
+            if (read(STDIN_FILENO, &seq[0], 1) == 1 &&
+                read(STDIN_FILENO, &seq[1], 1) == 1)
+            {
+                /* UP ARROW: ESC [ A */
+                if (seq[0] == '[' && seq[1] == 'A')
+                {
+                    if (history_index > 0)
+                    {
+                        history_index--;
+
+                        clear_line(old_length);
+
+                        strcpy(buffer, history[history_index]);
+
+                        position = strlen(buffer);
+                        old_length = position;
+
+                        printf("%s", buffer);
+                        fflush(stdout);
+                    }
+                }
+
+                /* DOWN ARROW: ESC [ B */
+                else if (seq[0] == '[' && seq[1] == 'B')
+                {
+                    if (history_index < history_count - 1)
+                    {
+                        history_index++;
+
+                        clear_line(old_length);
+
+                        strcpy(buffer, history[history_index]);
+
+                        position = strlen(buffer);
+                        old_length = position;
+
+                        printf("%s", buffer);
+                        fflush(stdout);
+                    }
+                    else if (history_index == history_count - 1)
+                    {
+                        history_index++;
+
+                        clear_line(old_length);
+
+                        buffer[0] = '\0';
+                        position = 0;
+                        old_length = 0;
+
+                        fflush(stdout);
+                    }
+                }
+            }
+        }
+
+        /* NORMAL CHARACTER */
+        else if (position < MAX_COMMAND - 1)
+        {
+            buffer[position++] = c;
+
+            putchar(c);
+            fflush(stdout);
+        }
+    }
+
+    /* Restore terminal settings */
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_terminal);
+}
+
+/* Display stored history */
+void show_history()
+{
+    printf("\n\n----- COMMAND HISTORY -----\n");
+
+    for (int i = 0; i < history_count; i++)
+    {
+        printf("%d  %s\n", i + 1, history[i]);
+    }
+
+    printf("---------------------------\n");
+}
+
+int main()
+{
+    char command[MAX_COMMAND];
+
+    printf("=====================================\n");
+    printf("   Mini Shell - Command History\n");
+    printf("=====================================\n");
+
+    printf("Use UP/DOWN arrows to navigate history.\n");
+    printf("Type 'history' to display commands.\n");
+    printf("Type 'exit' to quit.\n\n");
+
+    while (1)
+    {
+        printf("myshell> ");
+        fflush(stdout);
+
+        /* Read command */
+        read_command(command);
+
+        /* Exit */
+        if (strcmp(command, "exit") == 0)
+        {
+            printf("Exiting shell...\n");
+            break;
+        }
+
+        /* History command */
+        if (strcmp(command, "history") == 0)
+        {
+            show_history();
+            continue;
+        }
+
+        /* Store command */
+        if (strlen(command) > 0)
+        {
+            store_history(command);
+
+            printf("Command executed: %s\n", command);
+        }
+    }
+
+    return 0;
+}
+
+3B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Node {
+    char vehicle[50];
+    struct Node *next;
+} Node;
+
+int main() {
+    int n, i;
+    Node *head = NULL, *temp, *newNode;
+
+    /* Allocate buffer dynamically */
+    printf("Enter number of vehicles: ");
+    scanf("%d", &n);
+
+    char *buffer = malloc(100);
+
+    if (buffer == NULL) {
+        printf("Memory allocation failed!\n");
+        return 1;
+    }
+
+    /* Prevent buffer overflow */
+    printf("Enter lane name: ");
+    scanf("%99s", buffer);
+    printf("Lane: %s\n", buffer);
+
+    /* Resize buffer */
+    buffer = realloc(buffer, 200);
+    printf("Buffer resized successfully.\n");
+
+    /* Create linked list */
+    printf("\nEnter vehicle names:\n");
+
+    for (i = 0; i < n; i++) {
+        newNode = malloc(sizeof(Node));
+
+        if (newNode == NULL) {
+            printf("Allocation failed!\n");
+            free(buffer);
+            return 1;
+        }
+
+        scanf("%49s", newNode->vehicle);
+
+        newNode->next = head;
+        head = newNode;
+    }
+
+    /* Display linked list */
+    printf("\nVehicle Queue:\n");
+    temp = head;
+
+    while (temp != NULL) {
+        printf("%s -> ", temp->vehicle);
+        temp = temp->next;
+    }
+    printf("NULL\n");
+
+    /* Release linked-list memory */
+    while (head != NULL) {
+        temp = head;
+        head = head->next;
+        free(temp);
+    }
+
+    /* Release buffer */
+    free(buffer);
+
+    printf("\nAll memory released successfully.\n");
+
+    return 0;
+}
