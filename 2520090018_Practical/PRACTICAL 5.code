@@ -1,0 +1,102 @@
+5(a) Producer–Consumer using Anonymous Pipe
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <time.h>
+
+int main() {
+    int pipefd[2];
+    pid_t pid;
+    char buffer[100];
+
+    pipe(pipefd);
+
+    pid = fork();
+
+    if (pid > 0) {
+        // Parent - Producer
+        close(pipefd[0]);
+
+        clock_t start = clock();
+
+        char message[] = "Hello from Producer!";
+
+        write(pipefd[1], message, sizeof(message));
+
+        close(pipefd[1]);
+
+        wait(NULL);
+
+        clock_t end = clock();
+
+        double time_taken = (double)(end - start) / CLOCKS_PER_SEC;
+
+        printf("Communication completed.\n");
+        printf("Communication time: %f seconds\n", time_taken);
+    }
+    else {
+        // Child - Consumer
+        close(pipefd[1]);
+
+        read(pipefd[0], buffer, sizeof(buffer));
+
+        printf("Consumer received: %s\n", buffer);
+
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+5(b) ls -l | grep ".c"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+    int pipefd[2];
+
+    pipe(pipefd);
+
+    if (fork() == 0) {
+        // Child 1 - runs ls -l
+
+        close(pipefd[0]);
+
+        dup2(pipefd[1], STDOUT_FILENO);
+
+        close(pipefd[1]);
+
+        execlp("ls", "ls", "-l", NULL);
+
+        perror("exec ls");
+    }
+    else {
+        // Parent creates second child
+
+        if (fork() == 0) {
+            // Child 2 - runs grep ".c"
+
+            close(pipefd[1]);
+
+            dup2(pipefd[0], STDIN_FILENO);
+
+            close(pipefd[0]);
+
+            execlp("grep", "grep", ".c", NULL);
+
+            perror("exec grep");
+        }
+
+        // Parent
+        close(pipefd[0]);
+        close(pipefd[1]);
+
+        wait(NULL);
+        wait(NULL);
+    }
+
+    return 0;
+}
