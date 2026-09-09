@@ -1,0 +1,123 @@
+4A)
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX 100
+
+struct Token {
+    char value[50];
+};
+
+int main() {
+    char input[MAX];
+    struct Token tokens[20];
+    int count = 0;
+
+    printf("Enter input: ");
+    fgets(input, MAX, stdin);
+
+    char *token = strtok(input, " \t\n");
+
+    while (token != NULL) {
+
+        strcpy(tokens[count].value, token);
+        count++;
+
+        token = strtok(NULL, " \t\n");
+    }
+
+    printf("\nTokens:\n");
+
+    for (int i = 0; i < count; i++) {
+        printf("Token %d: %s\n", i + 1, tokens[i].value);
+    }
+
+    printf("\nTotal tokens: %d\n", count);
+
+    return 0;
+}
+
+4B)
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+struct Node {
+    char value[50];
+    struct Node *left;
+    struct Node *right;
+};
+
+struct Node* createNode(char value[]) {
+    struct Node *newNode = malloc(sizeof(struct Node));
+
+    strcpy(newNode->value, value);
+    newNode->left = NULL;
+    newNode->right = NULL;
+
+    return newNode;
+}
+
+int main() {
+    char input[100];
+    char *token;
+    char *tokens[10];
+    int count = 0;
+
+    printf("Enter command: ");
+    fgets(input, 100, stdin);
+
+    token = strtok(input, " \t\n");
+
+    while (token != NULL) {
+        tokens[count++] = token;
+        token = strtok(NULL, " \t\n");
+    }
+
+    // Handle empty command
+    if (count == 0) {
+        printf("Error: Empty command\n");
+        return 0;
+    }
+
+    // Simple syntax validation
+    if (count > 2) {
+        printf("Syntax Error: Too many arguments\n");
+        return 0;
+    }
+
+    // Create parse tree
+    struct Node *root = createNode("COMMAND");
+    root->left = createNode(tokens[0]);
+
+    if (count == 2)
+        root->right = createNode(tokens[1]);
+
+    printf("\nSyntax is valid.\n");
+
+    printf("\nParse Tree:\n");
+    printf("      %s\n", root->value);
+    printf("     /");
+    
+    if (root->right != NULL)
+        printf("       \\\n");
+    else
+        printf("\n");
+
+    printf("    %s", root->left->value);
+
+    if (root->right != NULL)
+        printf("       %s", root->right->value);
+
+    printf("\n");
+
+    printf("\nExecution structure:\n");
+    printf("Command: %s\n", root->left->value);
+
+    if (root->right != NULL)
+        printf("Argument: %s\n", root->right->value);
+
+    return 0;
+}
+4B)
