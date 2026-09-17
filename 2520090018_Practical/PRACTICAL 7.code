@@ -1,0 +1,51 @@
+7A)
+#include <stdio.h>
+#include <stdlib.h>
+
+int global = 10;          // Global variable
+static int stat = 20;     // Static variable
+
+int main() {
+
+    int stack = 30;       // Stack variable
+    int *heap = malloc(sizeof(int));  // Heap variable
+
+    *heap = 40;
+
+    printf("Code address   : %p\n", (void *)main);
+    printf("Global address : %p\n", (void *)&global);
+    printf("Static address : %p\n", (void *)&stat);
+    printf("Heap address   : %p\n", (void *)heap);
+    printf("Stack address  : %p\n", (void *)&stack);
+
+    free(heap);
+
+    return 0;
+}
+
+7B)
+#include <stdio.h>
+
+int main() {
+
+    FILE *file;
+
+    file = fopen("/proc/self/maps", "r");
+
+    if (file == NULL) {
+        printf("Cannot open /proc/self/maps\n");
+        return 1;
+    }
+
+    printf("Virtual Memory Mappings:\n\n");
+
+    char line[256];
+
+    while (fgets(line, sizeof(line), file)) {
+        printf("%s", line);
+    }
+
+    fclose(file);
+
+    return 0;
+}
