@@ -1,0 +1,74 @@
+8A)
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+
+    // malloc
+    int *a = malloc(3 * sizeof(int));
+
+    a[0] = 10;
+    a[1] = 20;
+    a[2] = 30;
+
+    printf("malloc: %d %d %d\n", a[0], a[1], a[2]);
+
+    // calloc
+    int *b = calloc(3, sizeof(int));
+
+    printf("calloc: %d %d %d\n", b[0], b[1], b[2]);
+
+    // realloc
+    a = realloc(a, 5 * sizeof(int));
+
+    a[3] = 40;
+    a[4] = 50;
+
+    printf("realloc: %d %d\n", a[3], a[4]);
+
+    // free
+    free(a);
+
+    // Intentionally not freeing b
+    // This creates a memory leak
+
+    return 0;
+}
+
+8B)
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+
+    int data[1000];
+
+    for (int i = 0; i < 1000; i++)
+        data[i] = 10;
+
+    printf("Before fork: data[0] = %d\n", data[0]);
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+
+        // Child
+        printf("Child before modification: data[0] = %d\n", data[0]);
+
+        data[0] = 99;
+
+        printf("Child after modification: data[0] = %d\n", data[0]);
+    }
+
+    else {
+
+        // Parent
+        wait(NULL);
+
+        printf("Parent after child modification: data[0] = %d\n", data[0]);
+    }
+
+    return 0;
+}
