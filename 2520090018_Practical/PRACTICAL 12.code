@@ -1,0 +1,158 @@
+12A)
+
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define BUFFER_SIZE 5
+
+int buffer[BUFFER_SIZE];
+int in = 0;
+int out = 0;
+
+sem_t empty;
+sem_t full;
+pthread_mutex_t lock;
+
+void *producer(void *arg)
+{
+    int i;
+
+    for (i = 1; i <= 10; i++)
+    {
+        // Wait for an empty space
+        sem_wait(&empty);
+
+        // Enter critical section
+        pthread_mutex_lock(&lock);
+
+        buffer[in] = i;
+        printf("Produced: %d\n", i);
+        in = (in + 1) % BUFFER_SIZE;
+
+        pthread_mutex_unlock(&lock);
+
+        // Increase number of full slots
+        sem_post(&full);
+    }
+
+    return NULL;
+}
+
+void *consumer(void *arg)
+{
+    int i, item;
+
+    for (i = 1; i <= 10; i++)
+    {
+        // Wait for an available item
+        sem_wait(&full);
+
+        // Enter critical section
+        pthread_mutex_lock(&lock);
+
+        item = buffer[out];
+        printf("Consumed: %d\n", item);
+        out = (out + 1) % BUFFER_SIZE;
+
+        pthread_mutex_unlock(&lock);
+
+        // Increase number of empty slots
+        sem_post(&empty);
+    }
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t producer_thread, consumer_thread;
+
+    // Initialize semaphores
+    sem_init(&empty, 0, BUFFER_SIZE);
+    sem_init(&full, 0, 0);
+
+    // Initialize mutex
+    pthread_mutex_init(&lock, NULL);
+
+    // Create threads
+    pthread_create(&producer_thread, NULL, producer, NULL);
+    pthread_create(&consumer_thread, NULL, consumer, NULL);
+
+    // Wait for threads
+    pthread_join(producer_thread, NULL);
+    pthread_join(consumer_thread, NULL);
+
+    // Destroy synchronization objects
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    pthread_mutex_destroy(&lock);
+
+    return 0;
+}
+
+12B)
+
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+pthread_mutex_t resource1;
+pthread_mutex_t resource2;
+
+void *thread1(void *arg)
+{
+    printf("Thread 1: Locking Resource 1\n");
+    pthread_mutex_lock(&resource1);
+
+    sleep(1);
+
+    printf("Thread 1: Locking Resource 2\n");
+    pthread_mutex_lock(&resource2);
+
+    printf("Thread 1: Using resources\n");
+
+    pthread_mutex_unlock(&resource2);
+    pthread_mutex_unlock(&resource1);
+
+    return NULL;
+}
+
+void *thread2(void *arg)
+{
+    printf("Thread 2: Locking Resource 1\n");
+    pthread_mutex_lock(&resource1);
+
+    sleep(1);
+
+    printf("Thread 2: Locking Resource 2\n");
+    pthread_mutex_lock(&resource2);
+
+    printf("Thread 2: Using resources\n");
+
+    pthread_mutex_unlock(&resource2);
+    pthread_mutex_unlock(&resource1);
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t t1, t2;
+
+    pthread_mutex_init(&resource1, NULL);
+    pthread_mutex_init(&resource2, NULL);
+
+    pthread_create(&t1, NULL, thread1, NULL);
+    pthread_create(&t2, NULL, thread2, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    pthread_mutex_destroy(&resource1);
+    pthread_mutex_destroy(&resource2);
+
+    printf("Program completed without deadlock.\n");
+
+    return 0;
+}
