@@ -1,0 +1,84 @@
+11A)
+#include <stdio.h>
+#include <pthread.h>
+
+int counter = 0;   // Shared variable
+
+void *increment(void *arg)
+{
+    int i;
+
+    for (i = 0; i < 100000; i++)
+    {
+        counter++;
+    }
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t t1, t2;
+
+    // Create two threads
+    pthread_create(&t1, NULL, increment, NULL);
+    pthread_create(&t2, NULL, increment, NULL);
+
+    // Wait for both threads
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("Final counter value: %d\n", counter);
+
+    return 0;
+}
+
+11B)
+#include <stdio.h>
+#include <pthread.h>
+
+int counter = 0;
+
+// Create mutex
+pthread_mutex_t lock;
+
+void *increment(void *arg)
+{
+    int i;
+
+    for (i = 0; i < 100000; i++)
+    {
+        // Lock before accessing shared variable
+        pthread_mutex_lock(&lock);
+
+        counter++;
+
+        // Unlock after accessing shared variable
+        pthread_mutex_unlock(&lock);
+    }
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t t1, t2;
+
+    // Initialize mutex
+    pthread_mutex_init(&lock, NULL);
+
+    // Create two threads
+    pthread_create(&t1, NULL, increment, NULL);
+    pthread_create(&t2, NULL, increment, NULL);
+
+    // Wait for both threads
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("Final counter value: %d\n", counter);
+
+    // Destroy mutex
+    pthread_mutex_destroy(&lock);
+
+    return 0;
+}
