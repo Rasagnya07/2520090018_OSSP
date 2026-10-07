@@ -1,0 +1,173 @@
+12A - Single Pipe
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main()
+{
+    int pipefd[2];
+    pid_t pid1, pid2;
+
+    // Commands to execute
+    char *cmd1[] = {"ls", NULL};
+    char *cmd2[] = {"wc", "-l", NULL};
+
+    // CREATE PIPE
+    if (pipe(pipefd) == -1)
+    {
+        printf("Pipe creation failed.\n");
+        return 1;
+    }
+
+    // Create first process
+    pid1 = fork();
+
+    if (pid1 == 0)
+    {
+        // REDIRECT stdout to pipe
+        dup2(pipefd[1], STDOUT_FILENO);
+
+        // CLOSE unused descriptors
+        close(pipefd[0]);
+        close(pipefd[1]);
+
+        // EXECUTE first command
+        execvp(cmd1[0], cmd1);
+
+        printf("Error executing first command.\n");
+        return 1;
+    }
+
+    // Create second process
+    pid2 = fork();
+
+    if (pid2 == 0)
+    {
+        // REDIRECT stdin from pipe
+        dup2(pipefd[0], STDIN_FILENO);
+
+        // CLOSE unused descriptors
+        close(pipefd[0]);
+        close(pipefd[1]);
+
+        // EXECUTE second command
+        execvp(cmd2[0], cmd2);
+
+        printf("Error executing second command.\n");
+        return 1;
+    }
+
+    // Parent closes both pipe descriptors
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    // SYNCHRONIZE PROCESSES
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
+  
+  12B - Multiple Pipes
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define COMMANDS 3
+
+int main()
+{
+    // Descriptor array for 2 pipes
+    int pipes[COMMANDS - 1][2];
+
+    pid_t pids[COMMANDS];
+
+    // Commands
+    char *commands[COMMANDS][3] =
+    {
+        {"ls", NULL, NULL},
+        {"grep", ".c", NULL},
+        {"wc", "-l", NULL}
+    };
+
+    int i;
+
+    printf("Pipeline: ls | grep .c | wc -l\n\n");
+
+    // CREATE MULTIPLE PIPES
+    for (i = 0; i < COMMANDS - 1; i++)
+    {
+        if (pipe(pipes[i]) == -1)
+        {
+            printf("Pipe creation failed.\n");
+            return 1;
+        }
+    }
+
+    // CREATE MULTIPLE PROCESSES
+    for (i = 0; i < COMMANDS; i++)
+    {
+        pids[i] = fork();
+
+        if (pids[i] == 0)
+        {
+            // First command
+            if (i == 0)
+            {
+                // Redirect stdout to first pipe
+                dup2(pipes[0][1], STDOUT_FILENO);
+            }
+
+            // Middle command
+            else if (i == 1)
+            {
+                // Input from first pipe
+                dup2(pipes[0][0], STDIN_FILENO);
+
+                // Output to second pipe
+                dup2(pipes[1][1], STDOUT_FILENO);
+            }
+
+            // Last command
+            else
+            {
+                // Input from second pipe
+                dup2(pipes[1][0], STDIN_FILENO);
+            }
+
+            // CLOSE ALL PIPE DESCRIPTORS
+            for (int j = 0; j < COMMANDS - 1; j++)
+            {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+
+            // EXECUTE COMMAND
+            execvp(commands[i][0], commands[i]);
+
+            printf("Error executing command.\n");
+            return 1;
+        }
+    }
+
+    // PARENT CLOSES ALL PIPE DESCRIPTORS
+    for (i = 0; i < COMMANDS - 1; i++)
+    {
+        close(pipes[i][0]);
+        close(pipes[i][1]);
+    }
+
+    // WAIT FOR ALL PROCESSES
+    for (i = 0; i < COMMANDS; i++)
+    {
+        waitpid(pids[i], NULL, 0);
+    }
+
+    printf("\nLong pipeline executed successfully.\n");
+
+    return 0;
+}
+
+    printf("Data successfully passed through pipe.\n");
+
+    return 0;
+}
