@@ -1,0 +1,86 @@
+6A)
+#include <stdio.h>
+
+int main()
+{
+    char input[200];
+    int i;
+
+    printf("Enter a string with escape sequences: ");
+    fgets(input, sizeof(input), stdin);
+
+    printf("\nOriginal input:\n");
+    printf("%s", input);
+
+    printf("\nProcessed output:\n");
+
+    for (i = 0; input[i] != '\0'; i++)
+    {
+        if (input[i] == '\\')
+        {
+            i++;
+
+            if (input[i] == 'n')
+                printf("\n");
+            else if (input[i] == 't')
+                printf("\t");
+            else if (input[i] == ' ')
+                printf(" ");
+            else if (input[i] == '\\')
+                printf("\\");
+            else
+                printf("%c", input[i]);
+        }
+        else
+        {
+            printf("%c", input[i]);
+        }
+    }
+
+    return 0;
+}
+6B)
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main()
+{
+    pid_t pid;
+
+    printf("Parent process started.\n");
+
+    // Create child process
+    pid = fork();
+
+    if (pid < 0)
+    {
+        printf("Fork failed.\n");
+        return 1;
+    }
+
+    if (pid == 0)
+    {
+        // Child process
+        printf("Child process created.\n");
+
+        printf("Executing ls command...\n");
+
+        execl("/bin/ls", "ls", "-l", NULL);
+
+        // This executes only if execl() fails
+        printf("Execution failed.\n");
+        return 1;
+    }
+    else
+    {
+        // Parent process
+        printf("Parent is waiting for child...\n");
+
+        wait(NULL);
+
+        printf("Child process completed.\n");
+    }
+
+    return 0;
+}
