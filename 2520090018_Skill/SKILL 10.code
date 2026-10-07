@@ -1,0 +1,169 @@
+10A)
+// 10A - Get Current Directory and Handle Exit
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main()
+{
+    char current_dir[200];
+
+    // Retrieve current directory
+    if (getcwd(current_dir, sizeof(current_dir)) == NULL)
+    {
+        printf("Error getting current directory.\n");
+        return 1;
+    }
+
+    // Display current path
+    printf("Current Directory: %s\n", current_dir);
+
+    // Save the current directory as state
+    char saved_dir[200];
+    snprintf(saved_dir, sizeof(saved_dir), "%s", current_dir);
+
+    printf("Directory state saved.\n");
+
+    // Process exit request
+    char choice;
+
+    printf("\nDo you want to exit? (y/n): ");
+    scanf(" %c", &choice);
+
+    if (choice == 'y' || choice == 'Y')
+    {
+        // Cleanup resources
+        printf("Cleaning up resources...\n");
+
+        printf("Saved Directory: %s\n", saved_dir);
+        printf("Program exiting successfully.\n");
+
+        exit(0);
+    }
+
+    printf("Program continues running.\n");
+
+    return 0;
+}
+
+10B)
+// 10B - Simple Export Command
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+// Function to check whether variable name is valid
+int valid_name(char *name)
+{
+    int i;
+
+    // First character must be letter or underscore
+    if (!isalpha(name[0]) && name[0] != '_')
+        return 0;
+
+    // Remaining characters can be letters, digits or underscore
+    for (i = 1; name[i] != '\0'; i++)
+    {
+        if (!isalnum(name[i]) && name[i] != '_')
+            return 0;
+    }
+
+    return 1;
+}
+
+int main()
+{
+    char input[200];
+    char name[100];
+    char value[100];
+
+    printf("Enter export command:\n");
+    printf("Example: export NAME=Rasagnya\n\n");
+
+    printf("> ");
+    fgets(input, sizeof(input), stdin);
+
+    // Remove newline
+    input[strcspn(input, "\n")] = '\0';
+
+    // Check for "export "
+    if (strncmp(input, "export ", 7) != 0)
+    {
+        printf("Error: Invalid export syntax.\n");
+        return 1;
+    }
+
+    // Find '='
+    char *equal = strchr(input + 7, '=');
+
+    if (equal == NULL)
+    {
+        printf("Error: Use export NAME=VALUE format.\n");
+        return 1;
+    }
+
+    // Get variable name
+    int name_length = equal - (input + 7);
+
+    strncpy(name, input + 7, name_length);
+    name[name_length] = '\0';
+
+    // Get value
+    strcpy(value, equal + 1);
+
+    // Validate variable name
+    if (!valid_name(name))
+    {
+        printf("Error: Invalid variable name.\n");
+        return 1;
+    }
+
+    // Check whether variable already exists
+    if (getenv(name) != NULL)
+    {
+        printf("Variable already exists. Updating it...\n");
+    }
+    else
+    {
+        printf("Creating new environment variable...\n");
+    }
+
+    // Update environment variable
+    if (setenv(name, value, 1) != 0)
+    {
+        printf("Error setting environment variable.\n");
+        return 1;
+    }
+
+    printf("Export successful.\n");
+    printf("%s = %s\n", name, getenv(name));
+
+    // Test export to child process
+    pid_t pid = fork();
+
+    if (pid == 0)
+    {
+        // Child process
+        printf("\nChild process received variable:\n");
+        printf("%s = %s\n", name, getenv(name));
+
+        exit(0);
+    }
+    else if (pid > 0)
+    {
+        // Parent process
+        wait(NULL);
+        printf("\nParent process finished.\n");
+    }
+    else
+    {
+        printf("Error creating child process.\n");
+    }
+
+    return 0;
+}
