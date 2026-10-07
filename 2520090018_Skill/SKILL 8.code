@@ -1,0 +1,162 @@
+8A)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main()
+{
+    char input[200];
+    char output[500];
+    char variable[100];
+    char *value;
+
+    int i = 0;
+    int j = 0;
+    int k;
+
+    printf("Enter a string: ");
+    fgets(input, sizeof(input), stdin);
+
+    while (input[i] != '\0')
+    {
+        // Detect variable reference
+        if (input[i] == '$')
+        {
+            i++;
+            k = 0;
+
+            // Get variable name
+            while ((input[i] >= 'A' && input[i] <= 'Z') ||
+                   (input[i] >= 'a' && input[i] <= 'z') ||
+                   (input[i] >= '0' && input[i] <= '9') ||
+                   input[i] == '_')
+            {
+                variable[k] = input[i];
+                k++;
+                i++;
+            }
+
+            variable[k] = '\0';
+
+            // Get variable value
+            value = getenv(variable);
+
+            if (value != NULL)
+            {
+                // Add value to output
+                strcpy(&output[j], value);
+                j = j + strlen(value);
+            }
+            else
+            {
+                // Undefined variable
+                printf("Undefined variable: %s\n", variable);
+            }
+        }
+        else
+        {
+            output[j] = input[i];
+            j++;
+            i++;
+        }
+    }
+
+    output[j] = '\0';
+
+    printf("Expanded string: %s", output);
+
+    return 0;
+}
+
+8B)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+void execute_cd(char *arg)
+{
+    if (arg == NULL)
+    {
+        printf("cd: missing argument\n");
+        return;
+    }
+
+    if (chdir(arg) != 0)
+        printf("cd: directory not found\n");
+}
+
+void execute_pwd()
+{
+    char path[200];
+
+    if (getcwd(path, sizeof(path)) != NULL)
+        printf("%s\n", path);
+}
+
+void execute_exit()
+{
+    printf("Exiting shell...\n");
+    exit(0);
+}
+
+int main()
+{
+    char command[100];
+    char *name;
+    char *arg;
+
+    // Dispatch table
+    struct
+    {
+        char *name;
+        void (*function)();
+    } builtins[] =
+    {
+        {"pwd", execute_pwd},
+        {"cd", NULL},
+        {"exit", execute_exit}
+    };
+
+    while (1)
+    {
+        printf("myshell> ");
+        fgets(command, sizeof(command), stdin);
+
+        // Remove newline
+        command[strcspn(command, "\n")] = '\0';
+
+        // Get command name
+        name = strtok(command, " ");
+
+        // Get argument
+        arg = strtok(NULL, " ");
+
+        if (name == NULL)
+            continue;
+
+        // Check built-in commands
+        if (strcmp(name, "pwd") == 0)
+        {
+            builtins[0].function();
+        }
+        else if (strcmp(name, "cd") == 0)
+        {
+            if (arg == NULL)
+                printf("cd: missing argument\n");
+            else if (chdir(arg) != 0)
+                printf("cd: directory not found\n");
+        }
+        else if (strcmp(name, "exit") == 0)
+        {
+            builtins[2].function();
+        }
+        else
+        {
+            printf("Invalid command: %s\n", name);
+        }
+    }
+
+    return 0;
+}
