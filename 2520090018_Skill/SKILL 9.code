@@ -1,0 +1,135 @@
+9A)
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+int main()
+{
+    char current[200];
+    char previous[200];
+    char path[200];
+
+    // Get initial directory
+    getcwd(current, sizeof(current));
+
+    strcpy(previous, current);
+
+    printf("Current directory: %s\n", current);
+
+    while (1)
+    {
+        printf("\nEnter directory (or exit): ");
+        scanf("%s", path);
+
+        // Exit program
+        if (strcmp(path, "exit") == 0)
+            break;
+
+        // Save current directory as previous
+        getcwd(previous, sizeof(previous));
+
+        // Change directory
+        if (chdir(path) == 0)
+        {
+            getcwd(current, sizeof(current));
+
+            printf("Directory changed successfully.\n");
+            printf("Current directory: %s\n", current);
+            printf("Previous directory: %s\n", previous);
+        }
+        else
+        {
+            printf("Error: Directory not found.\n");
+        }
+    }
+
+    return 0;
+}
+9B)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+void pwd()
+{
+    char path[200];
+
+    if (getcwd(path, sizeof(path)) != NULL)
+        printf("%s\n", path);
+}
+
+void cd(char *path)
+{
+    if (path == NULL)
+    {
+        printf("cd: missing argument\n");
+        return;
+    }
+
+    if (chdir(path) != 0)
+        printf("cd: directory not found\n");
+}
+
+void exit_shell()
+{
+    printf("Exiting shell...\n");
+    exit(0);
+}
+
+int main()
+{
+    char input[200];
+    char *command;
+    char *argument;
+
+    // Dispatch table
+    struct
+    {
+        char *name;
+        void (*function)();
+    } builtins[] =
+    {
+        {"pwd", pwd},
+        {"cd", NULL},
+        {"exit", exit_shell}
+    };
+
+    while (1)
+    {
+        printf("myshell> ");
+
+        fgets(input, sizeof(input), stdin);
+
+        // Remove newline
+        input[strcspn(input, "\n")] = '\0';
+
+        // Separate command and argument
+        command = strtok(input, " ");
+        argument = strtok(NULL, " ");
+
+        if (command == NULL)
+            continue;
+
+        // Dispatch built-in commands
+        if (strcmp(command, "pwd") == 0)
+        {
+            builtins[0].function();
+        }
+        else if (strcmp(command, "cd") == 0)
+        {
+            cd(argument);
+        }
+        else if (strcmp(command, "exit") == 0)
+        {
+            builtins[2].function();
+        }
+        else
+        {
+            printf("Invalid command: %s\n", command);
+        }
+    }
+
+    return 0;
+}
